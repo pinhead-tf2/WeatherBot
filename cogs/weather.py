@@ -32,22 +32,38 @@ class Weather(commands.Cog):
                     print("hell")
                 return await response.json()
 
+    # https://www.weatherapi.com/docs/weather_conditions.json
+    # color coding based on conditions
+    # cloud cover is greys
+    # rain is greens
+    # snow is light blues
+    # freezing is dark blues
+    # sleet is pinks
+    #
     # Red if alerts (the highest priority)
-
+    #
     # clouds
     # 1000 = sunny = sky blue
     # 1003 = partly cloudy = light grey
     # 1006 = cloudy = med gray
     # 1009 = overcast = dark grey
     # 1000 = clear = slightly blue black
-
+    #
     # rain
-    # 1030 = mist =
-
+    # 1030, 1063 = mist, patchy rain possible = barely light green
+    # 1150, 1153, 1180, 1183, 1240 = patchy light drizzle, light drizzle, patchy light rain, light rain, light rain shower = light green
+    # 1186, 1189, 1273, 1087 = moderate rain at times, moderate rain, patchy light rain with thunder, thundery outbreaks possible = green
+    # 1192, 1195 = heavy rain at times, heavy rain = darkish green
+    # 1246, 1276 = torrential rain shower, moderate or heavy rain with thunder = dark green
+    #
     # snow
-    # 1210, 1213, 1255, 1279 = patchy light snow, light snow, light snow showers, patchy light snow with thunder = bright white
+    # 1210, 1213, 1255, 1279, 1135 = patchy light snow, light snow, light snow showers, patchy light snow with thunder = bright white
     # 1216, 1219 = patchy moderate snow, moderate snow = slightly blue white
     # 1222, 1225, 1258, 1282 = patchy heavy snow, heavy snow, moderate or heavy snow showers, moderate or heavy snow with thunder = notably blue white
+    #
+    # sleet
+    # 1069 = patchy sleet possible = slightly pink
+
 
     async def determine_color(self, ctx, report):
         alerts = report['alerts']
