@@ -43,7 +43,8 @@ async def on_ready():
         session=bot.aiohttp_session
     )
     await bot.change_presence(activity=discord.Game('Awake'), status=discord.Status.online)
-    print(f"{bot.user} started | Start timestamp: {datetime.now().strftime('%I:%M %p, %m/%d/%Y')} | Time to start: {round(time.time() - bot.startTime, 4)} seconds")
+    print(f"{bot.user} started | Start timestamp: {datetime.now().strftime('%I:%M %p, %m/%d/%Y')} | "
+          f"Time to start: {round(time.time() - bot.startTime, 4)} seconds")
 
 
 admin = SlashCommandGroup("admin", "Admin/owner only commands", checks=[commands.is_owner()],)
