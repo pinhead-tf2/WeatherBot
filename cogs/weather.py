@@ -5,6 +5,7 @@ import re
 from datetime import datetime, timezone
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
+from images.image_report import generate_image
 
 
 async def urlify(s):
@@ -99,60 +100,64 @@ class Weather(commands.Cog):
     weather = SlashCommandGroup("weather", "Gets weather at a location")
 
     @weather.command()
-    async def current(self, ctx, city: discord.Option(str)):
+    async def current(self, ctx, city: discord.Option(str), image: discord.Option(bool)):
         report_current = await self.current_forecast_weather(city)
 
-        # ease of access, yknow?
-        location = report_current['location']
-        current = report_current['current']
-        condition = current['condition']
-        forecast = report_current['forecast']
-        forecast_today = forecast['forecastday'][0]['day']  # this is what it takes to get today's chance of rain
-        rain_chance = forecast_today['daily_chance_of_rain']
-        rain_likely = await will_it_weather(forecast_today['daily_will_it_rain'])
-        snow_chance = forecast_today['daily_chance_of_snow']
-        snow_likely = await will_it_weather(forecast_today['daily_will_it_snow'])
-
-        embed = discord.Embed(title=f"{location['name']}, "f"{location['region']}",
-                              description=location['country'],
-                              url=f"https://www.google.com/maps/search/?api=1&query="
-                                  f"{await urlify(location['name'])}%2C"
-                                  f"{await urlify(location['region'])}%2C"
-                                  f"{await urlify(location['country'])}",
-                              timestamp=datetime.now(timezone.utc),
-                              color=await determine_color(report_current)
-                              )
-        timestring = datetime.fromtimestamp(current['last_updated_epoch']).strftime("%I:%M %p")
-        embed.set_footer(text=f"Data as of {timestring} | Source: WeatherAPI.com")
-        embed.set_thumbnail(url=f"https:{condition['icon']}")
-        embed.add_field(name="Temperature",
-                        value=f"*Current:* {current['temp_f']}°F\n"
-                              f"*Low/High:* {forecast_today['mintemp_f']}°F/{forecast_today['maxtemp_f']}°F",
-                        inline=True)
-        embed.add_field(name="Condition",
-                        value=f"{condition['text']}\n"
-                              f"*Humidity:* {current['humidity']}%",
-                        inline=True)
-        embed.add_field(name='\u200b', value='\u200b', inline=True)  # ensure 2 line embed
-
-        if snow_chance == 0 and current['temp_f'] > 35:
-            embed.add_field(name='Precipitation',
-                            value=f"*Chance of Rain:* {rain_chance}%\n"
-                                  f"*Likely to Rain:* {rain_likely}",
-                            inline=True)
-        elif snow_chance > 0 and rain_chance > 0:
-            embed.add_field(name='Precipitation',
-                            value=f"*Chance of Rain:* {rain_chance}%\n"
-                                  f"*Likely to Rain:* {rain_likely}"
-                                  f"*Chance of Snow:* {snow_chance}%\n"
-                                  f"*Likely to Snow:* {snow_likely}",
-                            inline=True)
+        if image:
+            image = generate_image(report_current)
+            await ctx.respond(file=image)
         else:
-            embed.add_field(name='Precipitation',
-                            value=f"*Chance of Snow:* {snow_chance}%\n"
-                                  f"*Likely to Snow:* {snow_likely}",
+            # ease of access, yknow?
+            location = report_current['location']
+            current = report_current['current']
+            condition = current['condition']
+            forecast = report_current['forecast']
+            forecast_today = forecast['forecastday'][0]['day']  # this is what it takes to get today's chance of rain
+            rain_chance = forecast_today['daily_chance_of_rain']
+            rain_likely = await will_it_weather(forecast_today['daily_will_it_rain'])
+            snow_chance = forecast_today['daily_chance_of_snow']
+            snow_likely = await will_it_weather(forecast_today['daily_will_it_snow'])
+
+            embed = discord.Embed(title=f"{location['name']}, "f"{location['region']}",
+                                  description=location['country'],
+                                  url=f"https://www.google.com/maps/search/?api=1&query="
+                                      f"{await urlify(location['name'])}%2C"
+                                      f"{await urlify(location['region'])}%2C"
+                                      f"{await urlify(location['country'])}",
+                                  timestamp=datetime.now(timezone.utc),
+                                  color=await determine_color(report_current)
+                                  )
+            timestring = datetime.fromtimestamp(current['last_updated_epoch']).strftime("%I:%M %p")
+            embed.set_footer(text=f"Data as of {timestring} | Source: WeatherAPI.com")
+            embed.set_thumbnail(url=f"https:{condition['icon']}")
+            embed.add_field(name="Temperature",
+                            value=f"*Current:* {current['temp_f']}°F\n"
+                                  f"*Low/High:* {forecast_today['mintemp_f']}°F/{forecast_today['maxtemp_f']}°F",
                             inline=True)
-        await ctx.respond(embed=embed)
+            embed.add_field(name="Condition",
+                            value=f"{condition['text']}\n"
+                                  f"*Humidity:* {current['humidity']}%",
+                            inline=True)
+            embed.add_field(name='\u200b', value='\u200b', inline=True)  # ensure 2 line embed
+
+            if snow_chance == 0 and current['temp_f'] > 35:
+                embed.add_field(name='Precipitation',
+                                value=f"*Chance of Rain:* {rain_chance}%\n"
+                                      f"*Likely to Rain:* {rain_likely}",
+                                inline=True)
+            elif snow_chance > 0 and rain_chance > 0:
+                embed.add_field(name='Precipitation',
+                                value=f"*Chance of Rain:* {rain_chance}%\n"
+                                      f"*Likely to Rain:* {rain_likely}"
+                                      f"*Chance of Snow:* {snow_chance}%\n"
+                                      f"*Likely to Snow:* {snow_likely}",
+                                inline=True)
+            else:
+                embed.add_field(name='Precipitation',
+                                value=f"*Chance of Snow:* {snow_chance}%\n"
+                                      f"*Likely to Snow:* {snow_likely}",
+                                inline=True)
+            await ctx.respond(embed=embed)
 
 
 def setup(bot):
