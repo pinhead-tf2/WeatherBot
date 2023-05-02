@@ -1,3 +1,4 @@
+import aiosqlite
 import discord
 import os
 import time
@@ -42,6 +43,12 @@ async def on_ready():
         getenv("WEBHOOK_URL"),
         session=bot.aiohttp_session
     )
+
+    async with aiosqlite.connect("botstorage.db") as db:
+        await db.execute('''CREATE TABLE IF NOT EXISTS usersettings
+                        ([user_id] INTEGER, [use_image] INTEGER)''')
+        await db.commit()
+
     await bot.change_presence(activity=discord.Game('Awake'), status=discord.Status.online)
     print(f"{bot.user} started | Start timestamp: {datetime.now().strftime('%I:%M %p, %m/%d/%Y')} | "
           f"Time to start: {round(time.time() - bot.startTime, 4)} seconds")
@@ -85,7 +92,8 @@ async def cog_names(ctx: discord.AutocompleteContext):
 
 @cogs.command(name="cog", description="Manages the loadstate of a cog")
 @option("load_choice", description="Choose what you'll do with the cog", choices=['reload', 'load', 'unload'])
-@option("cog_name", description="Select the cog you wish to manage", autocomplete=discord.utils.basic_autocomplete(cog_names))
+@option("cog_name", description="Select the cog you wish to manage",
+        autocomplete=discord.utils.basic_autocomplete(cog_names))
 @commands.is_owner()
 async def cog(ctx,
               load_choice: str,
@@ -100,7 +108,8 @@ async def cog(ctx,
         case 'unload':
             bot.unload_extension(cog_name)
         case _:
-            await interaction.edit_original_response(content="i don't know how you chose an invalid option, but you did. great job.")
+            await interaction.edit_original_response(content="i don't know how you chose an invalid option, "
+                                                             "but you did. great job.", ephemeral=True)
     await interaction.edit_original_response(content=f"**Successfully {load_choice}ed {cog_name}!**")
 
 
@@ -120,7 +129,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: E
             )
             if error.text:
                 message += f": {error.text}"
-            return await ctx.respond(message)
+            return await ctx.respond(message, ephemeral=True)
         elif not isinstance(error, discord.DiscordException):
             await ctx.respond("Unexpected error encountered, how the fuck did you do that", ephemeral=True)
             header = f"Command: `/{ctx.command.qualified_name}`"
@@ -135,7 +144,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error: E
             title=error.__class__.__name__,
             description=str(error),
             color=discord.Color.red(),
-        )
+        ), ephemeral=True
     )
 
 
